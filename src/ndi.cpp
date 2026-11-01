@@ -67,4 +67,19 @@ void NdiSender::send(void* data, unsigned width, unsigned height, int pitch, int
     frame.line_stride_in_bytes = pitch;
     runtime_.api->send_send_video_async_v2(sender_, &frame);
 }
+NdiAudioSender::NdiAudioSender(const std::wstring& runtime, const std::string& name) : runtime_(runtime) {
+    NDIlib_send_create_t desc{};
+    desc.p_ndi_name = name.c_str(); desc.clock_video = false; desc.clock_audio = false;
+    sender_ = runtime_.api->send_create(&desc);
+    if (!sender_) throw std::runtime_error("NDI audio sender creation failed");
+}
+NdiAudioSender::~NdiAudioSender() { if (sender_) runtime_.api->send_destroy(sender_); }
+bool NdiAudioSender::connected() const { return runtime_.api->send_get_no_connections(sender_, 0) > 0; }
+void NdiAudioSender::send(float* planar, unsigned frames, int64_t pts) {
+    NDIlib_audio_frame_v2_t frame{};
+    frame.sample_rate = 44100; frame.no_channels = 2; frame.no_samples = static_cast<int>(frames);
+    frame.timecode = pts; frame.p_data = planar;
+    frame.channel_stride_in_bytes = static_cast<int>(frames * sizeof(float));
+    runtime_.api->send_send_audio_v2(sender_, &frame); // Synchronous on the worker only.
+}
 }

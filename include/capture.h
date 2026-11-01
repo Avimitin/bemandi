@@ -10,25 +10,18 @@
 #include <thread>
 #include "bemandi_api.h"
 #include "core.h"
+#include "config.h"
+#include "timing.h"
 
 namespace bemandi {
 using Microsoft::WRL::ComPtr;
 constexpr size_t slot_count = 4;
-enum class PixelFormat { uyvy, bgra };
-struct Config {
-    PixelFormat format = PixelFormat::uyvy;
-    unsigned fps = 120, width = 1920, height = 1080, swapchain = 0;
-    std::wstring log_path, ndi_runtime;
-    std::string source_name = "IIDX Main";
-};
 struct Counters {
     std::atomic<uint64_t> presented{}, captured{}, dropped_busy{}, skipped_cadence{}, skipped_no_receiver{},
         completed{}, bytes{}, errors{}, max_capture_us{}, resets{};
 };
 extern Counters counters;
 void log(const char* text) noexcept;
-int64_t ticks() noexcept;
-int64_t frequency() noexcept;
 struct Slot {
     std::atomic<SlotState> state{SlotState::free};
     ComPtr<IDirect3DSurface9> gpu, cpu;

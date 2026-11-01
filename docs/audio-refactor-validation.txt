@@ -1,0 +1,34 @@
+Audio and refactor validation - 2026-11-02
+
+Baseline committed before edits:
+0813b26 Add OBS-free D3D9 capture with standard NDI output
+
+Windows x64 Release build, MSVC 19.44, /W4 /WX.
+DLL SHA256:
+784e401aa096bd0c0474e747f4cc6565fa13865d5f8fcf652e5b67d6ac11479b
+
+Automated checks passed:
+- Core capture cadence, ownership and long-uptime timestamp tests.
+- Seven D3D9 COM slots checked against Windows SDK C interface layouts.
+- PCM queue bounds, overflow, immutable owned buffers, wraparound and 200,000
+  concurrent producer/consumer transfers; unknown build profile rejection.
+- Real NDI audio round trip: 573 received packets, 0 bad format/sample/timecode
+  checks, peak 0.499997, 0 queue drops, 0 sender errors. A deliberate 200 ms
+  producer pause produced one discontinuity and recovered with monotonic
+  timestamps. Sender stop/start also completed.
+- All eight video integration scenarios passed after extraction of the hooks:
+  baseline, idle, UYVY, BGRX, D3D9Ex reset, legacy D3D9 reset, swapchain Present,
+  and slow receiver. No busy-slot drops in this run. Missing game DLL cleanly
+  disabled audio while video tests continued.
+
+Tests run on the development PC with an installed NDI runtime. Audio uses
+synthetic PCM, not an emulated or running game. Static analysis verified the
+current IIDX34 profile's graph, format and tap; it does not establish every
+scene's routing, perceptual sound quality or actual cabinet callback overhead.
+
+The deployed cabinet DLL remains the earlier video-only baseline. Before a
+daily-use audio release, install the new DLL/config while the game is stopped
+and check IIDX Audio during attract/login, selection, gameplay and results.
+Also check receiver reconnect, native recorder on/off, shutdown and A/V sync.
+Cabinet audio functionality/performance and long-session clock behavior are
+pending validation. No remote repository publication was performed.

@@ -1,0 +1,45 @@
+Adding support for a game update
+
+Video uses standard Direct3D 9 interfaces and has no bm2dx.dll RVAs.
+include/d3d9_abi.h contains the COM method slots and signatures. Its test checks
+the slots against the Windows SDK C interface definitions. Do not change these
+indices just because the game DLL changed.
+
+Native audio is build-specific. include/game_profiles.h selects an exact SHA256
+from include/games/*.h. Each build header contains function RVAs, object field
+offsets and entry-point fingerprints. Unknown hashes or changed entry bytes
+disable audio; there is no heuristic scanning or force-enable switch.
+
+Update workflow:
+1. Analyze a privately obtained new DLL. Keep the DLL and analysis database out
+   of Git. Compute its SHA256; do not reuse a profile based on the version label.
+2. Find the main sound graph constructor and its stereo recording tee. Verify
+   the calling conventions, argument/return widths, object offsets, tee vtable,
+   float/interleaved layout, channel order, sample rate, and byte-count semantics.
+3. Verify the tee is pulled even when the native recorder is off, and that the
+   copy occurs after the upstream mixer fills the buffer. Check all supported
+   audio backends and whether a new graph can replace the original.
+4. Add a new constexpr GameProfile header and include/register it in
+   game_profiles.h. All addresses are RVAs relative to the loaded module.
+   If signatures or audio format changed, implement a new adapter; an offset
+   change alone cannot make an incompatible ABI safe.
+5. Build, run the queue/ABI tests, test-audio.ps1 and test-video.ps1, then test on
+   the cabinet: startup, attract/login, selection, gameplay, results, native
+   recording on/off, receiver disconnect/reconnect, and shutdown/restart.
+
+Current audio profile: IIDX34 c98e183e (full hash in its header).
+The sound subgraph declares IEEE float32, two interleaved channels, 44100 Hz.
+The graph's first subgraph contains the same tee used by the native recorder.
+The adapter hooks its read method, calls the original first, then copies its
+output. It never registers/replaces the game's recorder callback or enables
+AAC/video recording. The selected mix precedes cabinet master gain/limiting
+and final device conversion; it is not a six-channel ASIO loopback.
+
+Plugin startup must precede sound graph construction. There is no late attach
+or traversal of a live mutable sound graph. Hook code and its capture storage
+remain pinned until process exit. Stop disables forwarding and joins the NDI
+worker while retaining callback storage to prevent use-after-free.
+
+Static analysis establishes this adapter's layout and format. Real cabinet
+coverage of every scene/audio backend must be checked separately; a quiet eco
+screen can legitimately contain silence or stop requesting audio altogether.

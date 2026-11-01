@@ -26,4 +26,14 @@ private:
     NDIlib_send_instance_t sender_ = nullptr;
     unsigned fps_;
 };
+class NdiAudioSender {
+public:
+    NdiAudioSender(const std::wstring& runtime, const std::string& name);
+    ~NdiAudioSender();
+    bool connected() const;
+    void send(float* planar, unsigned frames, int64_t pts);
+private:
+    NdiRuntime runtime_;
+    NDIlib_send_instance_t sender_ = nullptr;
+};
 }

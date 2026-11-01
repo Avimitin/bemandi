@@ -7,11 +7,6 @@
 
 namespace bemandi {
 Counters counters;
-int64_t ticks() noexcept { LARGE_INTEGER n; QueryPerformanceCounter(&n); return n.QuadPart; }
-int64_t frequency() noexcept {
-    static const int64_t value = [] { LARGE_INTEGER n; QueryPerformanceFrequency(&n); return n.QuadPart; }();
-    return value;
-}
 static void check(HRESULT hr, const char* operation) {
     if (FAILED(hr)) {
         char message[256]; sprintf_s(message, "%s failed: 0x%08lX", operation, static_cast<unsigned long>(hr));
@@ -69,9 +64,7 @@ Capture::Capture(IDirect3DDevice9* device, const Config& config) : config_(confi
         render_target_count_ = std::min<DWORD>(caps.NumSimultaneousRTs, 4);
     }
     // NDI initialization, connection checks, sending, readback, and logging run on the worker.
-    FILETIME time{}; GetSystemTimeAsFileTime(&time);
-    epoch_ = static_cast<int64_t>((static_cast<uint64_t>(time.dwHighDateTime) << 32) | time.dwLowDateTime)
-        - 116444736000000000LL - to_100ns(ticks(), frequency());
+    epoch_ = clock_epoch();
     wake_ = CreateEventW(nullptr, FALSE, FALSE, nullptr);
     if (!wake_) throw std::runtime_error("CreateEvent failed");
     try { worker_ = std::thread(&Capture::work, this); }

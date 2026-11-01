@@ -1,24 +1,25 @@
-bemandi - Direct3D 9 video to NDI
+bemandi - Direct3D 9 video and native game audio to NDI
 
 A Windows x64 Spice plugin that captures a displayed game backbuffer and sends
-it through the standard NDI High Bandwidth runtime. No OBS process, native game
-recorder, NVENC encoder, or NDI Advanced SDK is used by this implementation.
+it through the standard NDI High Bandwidth runtime. A separate IIDX Audio source
+copies the supported game's native stereo mix. No OBS process, native recording
+session, NVENC encoder, AAC encoder, or NDI Advanced SDK is required.
 
 NDI information and runtime: https://ndi.video/for-developers/ndi-sdk/
 NDI® is a registered trademark of Vizrt NDI AB.
 
 Current status
 
-Working prototype, locally tested with a synthetic moving D3D9/D3D9Ex source
-and a real NDI receiver at 1920x1080 / 120 fps. Includes color/motion checks,
-device reset, swapchain Present, render-state checks, no-subscriber behavior,
-and slow receiver tests. Actual IIDX gameplay and the i5-4690/GTX1060 cabinet
-remain untested. Do not interpret synthetic Present-call timing as game frame
-time, end-to-end latency, or a guarantee of no stutter.
+Video has been tested on an IIDX34 cabinet (Ryzen 5 3600 / GTX 1660 SUPER) at
+1920x1080 / 120 Hz, plus synthetic D3D9/D3D9Ex reset, color, motion, swapchain,
+state-restoration, idle and slow-receiver tests. The i5-4690/GTX1060 minimum
+configuration remains untested. Present counts are not frame-time percentiles
+or a guarantee of no stutter.
 
-One selected video stream is implemented. Audio and simultaneous main/subscreen
-streams are not implemented in this version. A separate audio source can be
-added later without changing the video pipeline.
+Separate stereo audio is implemented and tested with synthetic PCM through a
+real NDI receiver. The native IIDX34 adapter is based on verified static analysis;
+cabinet audio validation across menus/gameplay and listening checks are pending.
+Simultaneous main/subscreen video streams are not implemented.
 
 How it works
 
@@ -42,6 +43,23 @@ The worker owns readback and NDI calls. GPU queries gate readback; async NDI
 buffer ownership is preserved until the next submission or flush completes.
 Capture skips pixels when there is no connected receiver.
 
+Audio: native stereo mixer -> bounded PCM queue -> worker -> IIDX Audio -> LAN.
+The tap calls the game's original audio function first and leaves the native
+recorder callback intact. It copies interleaved float samples into preallocated
+storage; it does not wait, allocate, log or call NDI on the game audio thread.
+No receiver means no PCM copy. A full queue drops audio instead of blocking.
+The worker packs 10 ms stereo packets at 44100 Hz, deinterleaves and limits them
+to +/-1, and sends PCM to NDI. It does not run AAC or a resampler. Raw float
+payload is about 2.82 Mbit/s before runtime/protocol overhead. Queue storage is
+about 4 MiB; stale audio over 100 ms old is discarded after a stall.
+
+Both sources use one QPC-based timestamp epoch. Audio follows sample counts
+between discontinuities; clock drift over 30 ms triggers a timestamp re-anchor
+without backward timecodes. There is no automatic receiver-side A/V alignment.
+The tap precedes cabinet master gain/limiting and device conversion, so its level
+can differ from the cabinet speakers. It is the main stereo recording mix, not
+all six physical ASIO output channels, microphone capture or Windows loopback.
+
 This is not a promise of wait-free GPU operation: D3D9 driver calls and
 GetRenderTargetData on the multithreaded game device can still contend with
 rendering. Measure game frame times on the target. Initial resource allocation
@@ -55,7 +73,8 @@ Requirements
 - A D3DCREATE_MULTITHREADED device. The plugin refuses other devices and does
   not change the game's device creation flags.
 - Installed NDI 6 runtime on the sender; compatible NDI software on the receiver.
-- Spice supporting the v0 plugin entry point. Load before game device creation.
+- Spice supporting the v0 plugin entry point. Load before video/sound creation.
+- Native audio requires a verified game profile; see docs/game-updates.txt.
 - A wired network with enough measured capacity for the selected NDI streams.
 
 Use
@@ -70,6 +89,9 @@ Use
    and five-second capture counters are written there.
 4. On the receiving computer, select the NDI source named IIDX Main in DistroAV
    or another NDI receiver. NDI typically displays the host name as well.
+5. Add IIDX Audio as a second NDI input for sound. Set its level and sync offset
+   on the streaming computer. IIDX Main remains video-only. Disable duplicate
+   audio inputs from previous OBS/NDI capture configurations if applicable.
 
 No game DLL modification is required. This repository does not deploy to the
 cabinet, edit its launcher, or change firewall rules automatically.
@@ -84,6 +106,13 @@ The default file is config/bemandi.ini. Its [video] keys are:
   swapchain    selected device swapchain index, default 0
   source_name  NDI source label, default IIDX Main
   ndi_runtime  optional absolute path to Processing.NDI.Lib.x64.dll
+
+Its [audio] keys are:
+  enabled      1 (default) for separate native audio, 0 to disable
+  source_name  distinct NDI label, default IIDX Audio
+Audio shares the runtime path configured under [video]. A missing [audio]
+section uses these defaults. Unknown game hashes or altered hook entry bytes
+disable audio and log the reason; video can continue independently.
 
 Width/height are selection checks, not scaling settings. No scaling is currently
 performed. 60 fps is an available comparison, not a necessary game/NDI limit.
@@ -113,25 +142,26 @@ Optional build parameters:
   -SpiceSdkInclude directory containing spicesdk.h
   -NdiInclude     directory containing Processing.NDI.Lib.h
 
-For this workstation's existing standalone Windows SDK:
-    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1 -SdkRoot 'D:\Share\chart-requester\reference\sdk'
-
 Artifacts: build/bemandi.dll, build/capture_test.exe, build/ndi_receive_test.exe.
 To create a distribution directory including config and dependency notices:
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1
 
 Tests
 
-The build runs core tests for capture cadence, long-uptime timestamp arithmetic,
-and exclusive buffer ownership. For actual GPU/NDI integration tests:
+The build tests capture cadence, timestamp arithmetic, audio queue overflow and
+concurrent ownership, exact profile selection, and D3D9 slots against the SDK.
+For GPU/NDI and audio/NDI integration tests (installed NDI runtime required):
 
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-video.ps1
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-audio.ps1
 
 This starts hidden synthetic source/receiver processes, does not touch a running
 game, and writes machine-readable results under test-output/. The receiver
 verifies decoded color bands and changing marker positions, declared resolution
 and frame rate, and increasing capture timecodes. The generator checks selected
 render states after each Present.
+The audio test uses varying 16..1024-frame chunks and checks stereo sample data,
+44100 Hz / 441-sample packets, levels, monotonic timestamps and sender restart.
 
 cpu_core_percent is sender process CPU time divided by elapsed time: 100 means
 one fully used logical core, not 100 percent of the whole CPU. Tests run source
@@ -149,16 +179,19 @@ Known limitations and next validation
 
 - Capture begins only for a newly created matching device after plugin startup.
   This is intended for -k startup loading, not arbitrary late injection.
-- No resizing/scaling, HDR/10-bit formats, D3D11/12, or audio.
+- No resizing/scaling, HDR/10-bit formats or D3D11/12.
 - Device removal/failed reset is not equivalent to the successful reset tests.
-- Current tests do not validate real adapter-group/multihead IIDX, live gameplay,
-  overlays from another process, physical network congestion, or long sessions.
+- Simultaneous multihead capture, overlays from another process, physical
+  network congestion and long sessions require further validation.
 - If eco mode stops presenting, no new frames are generated; no keepalive image
   is synthesized yet.
 - The GPU conversion uses BT.709 4:2:2 limited range. This does not preserve every
   RGB sample losslessly. Verify colored text and game-specific output levels.
-- This implementation does not reuse game recorder functions or hardcoded
-  bm2dx.dll addresses. Its private reverse-engineering material is ignored by Git.
+- Audio needs a build-specific header; video uses only standard D3D9 interfaces.
+  See docs/game-updates.txt for the update workflow. Private binaries and
+  decompilations are ignored by Git and are not required to build the project.
+- No synthetic silence is sent when the game's audio graph stops being pulled.
+  Scene coverage and native recording coexistence still need cabinet testing.
 
 Open source
 
