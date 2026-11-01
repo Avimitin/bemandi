@@ -1,0 +1,190 @@
+﻿[
+    {
+        "case":  "baseline",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  0,
+                       "sent":  0,
+                       "busy":  0,
+                       "no_receiver":  0,
+                       "errors":  0,
+                       "resets":  0,
+                       "max_capture_us":  0,
+                       "present_p50_us":  11.7,
+                       "present_p99_us":  41.3,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.002,
+                       "cpu_core_percent":  0.00
+                   },
+        "receiver":  null
+    },
+    {
+        "case":  "idle",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  0,
+                       "sent":  0,
+                       "busy":  0,
+                       "no_receiver":  720,
+                       "errors":  0,
+                       "resets":  0,
+                       "max_capture_us":  0,
+                       "present_p50_us":  12.8,
+                       "present_p99_us":  60.4,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.001,
+                       "cpu_core_percent":  0.52
+                   },
+        "receiver":  null
+    },
+    {
+        "case":  "uyvy",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  670,
+                       "sent":  670,
+                       "busy":  0,
+                       "no_receiver":  32,
+                       "errors":  0,
+                       "resets":  0,
+                       "max_capture_us":  431,
+                       "present_p50_us":  40.1,
+                       "present_p99_us":  93.4,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.002,
+                       "cpu_core_percent":  33.59
+                   },
+        "receiver":  {
+                         "received":  670,
+                         "bad_colors":  0,
+                         "bad_format":  0,
+                         "nonmonotonic":  0,
+                         "motion_changes":  669
+                     }
+    },
+    {
+        "case":  "bgra",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  675,
+                       "sent":  675,
+                       "busy":  0,
+                       "no_receiver":  32,
+                       "errors":  0,
+                       "resets":  0,
+                       "max_capture_us":  29,
+                       "present_p50_us":  31.8,
+                       "present_p99_us":  73.6,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.002,
+                       "cpu_core_percent":  78.36
+                   },
+        "receiver":  {
+                         "received":  675,
+                         "bad_colors":  0,
+                         "bad_format":  0,
+                         "nonmonotonic":  0,
+                         "motion_changes":  674
+                     }
+    },
+    {
+        "case":  "reset",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  637,
+                       "sent":  637,
+                       "busy":  0,
+                       "no_receiver":  65,
+                       "errors":  0,
+                       "resets":  1,
+                       "max_capture_us":  479,
+                       "present_p50_us":  37.4,
+                       "present_p99_us":  109.6,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.001,
+                       "cpu_core_percent":  34.11
+                   },
+        "receiver":  {
+                         "received":  637,
+                         "bad_colors":  0,
+                         "bad_format":  0,
+                         "nonmonotonic":  0,
+                         "motion_changes":  636
+                     }
+    },
+    {
+        "case":  "legacy",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  632,
+                       "sent":  632,
+                       "busy":  0,
+                       "no_receiver":  65,
+                       "errors":  0,
+                       "resets":  1,
+                       "max_capture_us":  456,
+                       "present_p50_us":  41.7,
+                       "present_p99_us":  146.6,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.001,
+                       "cpu_core_percent":  31.50
+                   },
+        "receiver":  {
+                         "received":  632,
+                         "bad_colors":  0,
+                         "bad_format":  0,
+                         "nonmonotonic":  0,
+                         "motion_changes":  631
+                     }
+    },
+    {
+        "case":  "swap",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  672,
+                       "sent":  672,
+                       "busy":  0,
+                       "no_receiver":  32,
+                       "errors":  0,
+                       "resets":  0,
+                       "max_capture_us":  461,
+                       "present_p50_us":  41.6,
+                       "present_p99_us":  136.8,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.002,
+                       "cpu_core_percent":  35.15
+                   },
+        "receiver":  {
+                         "received":  672,
+                         "bad_colors":  0,
+                         "bad_format":  0,
+                         "nonmonotonic":  0,
+                         "motion_changes":  671
+                     }
+    },
+    {
+        "case":  "slow-receiver",
+        "sender":  {
+                       "frames":  720,
+                       "captured":  677,
+                       "sent":  677,
+                       "busy":  0,
+                       "no_receiver":  32,
+                       "errors":  0,
+                       "resets":  0,
+                       "max_capture_us":  464,
+                       "present_p50_us":  39.6,
+                       "present_p99_us":  113.9,
+                       "state_errors":  0,
+                       "elapsed_seconds":  6.001,
+                       "cpu_core_percent":  26.56
+                   },
+        "receiver":  {
+                         "received":  66,
+                         "bad_colors":  0,
+                         "bad_format":  0,
+                         "nonmonotonic":  0,
+                         "motion_changes":  65
+                     }
+    }
+]

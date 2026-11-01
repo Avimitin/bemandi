@@ -1,0 +1,48 @@
+Local validation - 2026-11-01
+
+Build: Windows x64 Release, MSVC 19.44.35229.0, /W4 /WX.
+CPU: Intel Core i5-12490F.
+GPU: NVIDIA GeForce RTX 2070 SUPER, driver 581.29, 8 GiB VRAM.
+Sender and receiver run on the same PC. No IIDX process or cabinet was changed.
+NDI headers: 6.3.0.3; runtime loaded from the installed NDI 6 runtime.
+
+DLL SHA256:
+5f9b4db3975f7aae96faf14f0206133513b467b91629a19033780155ea8dbded
+
+Command:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-video.ps1 -Seconds 6
+
+All eight scenarios passed; details are in local-validation.json.
+
+                          Sent   Received   Sender CPU (one-core percent)
+capture disabled             0          -                 0.00
+plugin, no receiver          0          -                 0.52
+UYVY GPU conversion        670        670                33.59
+BGRA/BGRX baseline         675        675                78.36
+D3D9Ex reset               637        637                34.11
+legacy D3D9 with reset     632        632                31.50
+swapchain Present         672        672                35.15
+slow receiver             677         66                26.56
+
+The receiver checked 1920x1080 / 120 fps metadata, decoded RGB color bands,
+changing marker positions, and increasing capture timecodes. No failures were
+detected. The generator checked scissor and color-write state restoration.
+Both reset cases recovered. Idle mode captured zero frames.
+
+The slow receiver slept 100 ms between reads. It received fewer frames while
+the sender continued. This exercises NDI's slow-consumer behavior, not a
+physical congested network, and did not fill our four-slot ring in this run.
+Core tests separately check slot ownership and refusal to overwrite a busy slot.
+
+UYVY reduced measured sender CPU use in this short synthetic test, at the cost
+of a shader pass and greater capture-call cost. In this run, Present p99 was
+93.4 us for UYVY and 73.6 us for BGRA; maximum capture-call durations were 431 us
+and 29 us respectively (see JSON for authoritative values). Do not substitute
+these call durations for game frame times or full GPU execution cost.
+
+Six-second runs include source discovery and, where requested, reset downtime.
+CPU time is quantized and no repeated-run confidence interval was measured.
+Simple color bands are not representative of all gameplay compression loads.
+No comparison with OBS+DistroAV, GTX1060/i5-4690 hardware, physical 1GbE
+throughput, adapter-group IIDX rendering, or long-session behavior was performed.
+The successful 120 fps source is not a guarantee of 120 fps under those loads.

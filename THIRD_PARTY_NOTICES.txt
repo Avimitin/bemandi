@@ -1,0 +1,32 @@
+The project source under src/, include/, tests/ and scripts/ is covered by LICENSE.
+This does not relicense dependencies, runtime libraries, or research artifacts.
+
+MinHook v1.3.4
+https://github.com/TsudaKageyu/minhook/tree/c3fcafdc10146beb5919319d0683e44e3c30d537
+BSD 2-clause license; see third_party/minhook/LICENSE.txt. Includes HDE notices.
+MinHook is statically linked into bemandi.dll. Include its complete license
+notices with any binary distribution.
+
+NDI SDK interface headers 6.3.0.3
+Retrieved from DistroAV commit 68f74d91fd5e782162599ba613ebbe60815df204, lib/ndi/.
+Each interface header carries its own MIT license and Vizrt NDI AB copyright.
+No OBS/DistroAV implementation source is compiled into this project.
+The NDI SDK/runtime as a whole remains proprietary and subject to its own
+agreement; the header license does not make the runtime open source.
+See third_party/ndi-headers/NDI SDK License Agreement.pdf.
+The runtime is dynamically loaded from the user's installation and is not
+bundled by this repository.
+https://ndi.video/for-developers/ndi-sdk/
+NDI is used here under the registered trademark NDI®.
+NDI® is a registered trademark of Vizrt NDI AB.
+
+Spice SDK interface
+https://github.com/spice2x/spice2x.github.io/blob/3e3db7a411c80ff21e8cbee4f7609a8f9b8285b4/src/spice2x/sdk/include/spicesdk.h
+Used only as the host's C plugin ABI declaration. No Spice host implementation
+is compiled or bundled. Refer to the upstream project for its terms.
+
+Microsoft Windows SDK and Visual C++ toolchain are external build requirements.
+Windows Direct3D and D3DCompiler runtime libraries are external dependencies.
+
+The ignored research directory and copied game binary are local analysis
+material. They are not part of this project's source or distribution license.
