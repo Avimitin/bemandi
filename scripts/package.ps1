@@ -1,7 +1,10 @@
+param(
+    [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]*$')]
+    [string]$PackageName = ('bemandi-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot
-$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$destination = Join-Path $root "dist\bemandi-$stamp"
+$destination = Join-Path $root "dist\$PackageName"
 if (Test-Path -LiteralPath $destination) { throw 'Package directory already exists' }
 New-Item -ItemType Directory -Path $destination | Out-Null
 Copy-Item -LiteralPath "$root\build\bemandi.dll" -Destination $destination

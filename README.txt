@@ -149,6 +149,16 @@ Artifacts: build/bemandi.dll, build/capture_test.exe, build/ndi_receive_test.exe
 To create a distribution directory including config and dependency notices:
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1
 
+GitHub releases
+
+Push a version tag to run .github/workflows/release.yml. Every tag push builds
+the tagged source on Windows x64 in Release mode and runs the unit tests before
+creating a GitHub release named after the tag. The release ZIP contains the newly
+built DLL, default INI, documentation and dependency licenses. Its SHA-256 checksum
+appears at the end of the generated release notes and in the workflow summary.
+The workflow uses GitHub's built-in token; no personal token secret is required.
+GPU/NDI integration tests still require a suitable machine and installed runtime.
+
 Tests
 
 The build tests capture cadence, timestamp arithmetic, audio queue overflow and

@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch pinned build dependencies
+        run: ./scripts/bootstrap.ps1
+
+      - name: Build Release DLL and run unit tests
+        run: ./scripts/build.ps1 -Configuration Release
+
+      - name: Package Windows x64 ZIP
+        id: package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          # Tags can contain slashes and other characters invalid in Windows filenames.
+          $safeTag = $env:RELEASE_TAG -replace '[^A-Za-z0-9._-]', '_'
+          $packageName = "bemandi-$safeTag-windows-x64"
+          ./scripts/package.ps1 -PackageName $packageName
+          $zip = Join-Path $PWD "dist/$packageName.zip"
+          Compress-Archive -Path "dist/$packageName/*" -DestinationPath $zip -CompressionLevel Optimal
+          $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+
+      - name: Publish release with ZIP and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_ZIP: ${{ steps.package.outputs.zip }}
+          RELEASE_SHA256: ${{ steps.package.outputs.sha256 }}
+        run: |
+          $generatedNotes = gh api --method POST "repos/$env:GH_REPO/releases/generate-notes" --raw-field "tag_name=$env:RELEASE_TAG" --jq '.body'
+          if ($LASTEXITCODE -ne 0) { throw 'Release note generation failed' }
+          $zipName = Split-Path -Leaf $env:RELEASE_ZIP
+          $notes = @(
+            $generatedNotes
+            ''
+            '## SHA-256'
+            ''
+            '```text'
+            "$env:RELEASE_SHA256  $zipName"
+            '```'
+          ) -join "`n"
+          $notesPath = Join-Path $env:RUNNER_TEMP 'bemandi-release-notes.md'
+          Set-Content -LiteralPath $notesPath -Value $notes -Encoding utf8
+          gh release create --verify-tag --title "$env:RELEASE_TAG" --notes-file $notesPath -- "$env:RELEASE_TAG" "$env:RELEASE_ZIP"
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation or ZIP upload failed' }
+          $notes >> $env:GITHUB_STEP_SUMMARY
