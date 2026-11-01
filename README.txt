@@ -16,9 +16,11 @@ state-restoration, idle and slow-receiver tests. The i5-4690/GTX1060 minimum
 configuration remains untested. Present counts are not frame-time percentiles
 or a guarantee of no stutter.
 
-Separate stereo audio is implemented and tested with synthetic PCM through a
-real NDI receiver. The native IIDX34 adapter is based on verified static analysis;
-cabinet audio validation across menus/gameplay and listening checks are pending.
+Separate stereo audio is implemented and tested with synthetic PCM and live
+IIDX34 audio through a real NDI receiver. The cabinet's ASIO run delivered
+nonzero stereo PCM at 44100 Hz with no observed queue drops or invalid samples;
+the user also confirmed audible output. Full scene coverage, WASAPI output,
+native recording coexistence, A/V alignment and long sessions remain untested.
 Simultaneous main/subscreen video streams are not implemented.
 
 How it works

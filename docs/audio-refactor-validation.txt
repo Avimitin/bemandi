@@ -53,3 +53,30 @@ audio round trip still passes: 573 packets, no bad samples/timecodes, no drops
 or errors, and recovery from one deliberate pause. A live NDI audio probe is
 available for packet/level checks. This correction has not yet been validated
 on the cabinet; the earlier installed build remains in place.
+
+Live cabinet verification of the correction - 2026-11-02 01:25 +08:00
+
+The corrected DLL above was deployed without rollback copies. The launcher,
+video/audio INI and ASIO settings were preserved. The user restarted IIDX and
+reported that audio output appeared correct.
+
+Startup log confirmed selection of the existing main stereo graph, created
+before Spice SDK initialization. A 20-second read-only NDI probe received:
+  Packets: 1957 (measurement includes discovery/connection startup)
+  Sample rate: 44100 Hz
+  Channels: 2
+  Nonzero individual samples: 1725979
+  Peak: 0.94733173
+  RMS: 0.12880588
+  Invalid samples or non-increasing packet timecodes: 0
+
+The subsequent cabinet log reported 18,903 submitted packets and 8,336,592
+captured stereo frames, with zero queue drops, stale blocks, invalid input
+buffers or discontinuities. There were two other receiver connections; the
+probe temporarily raised the count to three and exited normally.
+
+This verifies live native PCM capture and NDI delivery for the cabinet's ASIO
+configuration. It does not measure driver underruns, additional CPU cost,
+network packet loss, scene coverage, stereo routing by listening, A/V sync or
+long-session drift. WASAPI shares the analyzed upstream game mix but has not
+been exercised on a running cabinet. No game audio or credentials were saved.
