@@ -8,6 +8,8 @@ struct GameProfile {
     const char* sha256;
     size_t graph_create_rva, tee_read_rva, tee_vtable_rva;
     size_t main_subgraph_offset, recording_tee_offset;
+    size_t sound_singleton_rva, singleton_vtable_rva, sound_vtable_rva, graph_vtable_rva;
+    size_t singleton_sound_offset, sound_graph_offset;
     std::array<unsigned char, 16> graph_prologue, tee_prologue;
 };
 // ABI common to the supported profile. A changed signature needs a new adapter,

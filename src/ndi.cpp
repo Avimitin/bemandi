@@ -74,7 +74,8 @@ NdiAudioSender::NdiAudioSender(const std::wstring& runtime, const std::string& n
     if (!sender_) throw std::runtime_error("NDI audio sender creation failed");
 }
 NdiAudioSender::~NdiAudioSender() { if (sender_) runtime_.api->send_destroy(sender_); }
-bool NdiAudioSender::connected() const { return runtime_.api->send_get_no_connections(sender_, 0) > 0; }
+int NdiAudioSender::connections() const { return runtime_.api->send_get_no_connections(sender_, 0); }
+bool NdiAudioSender::connected() const { return connections() > 0; }
 void NdiAudioSender::send(float* planar, unsigned frames, int64_t pts) {
     NDIlib_audio_frame_v2_t frame{};
     frame.sample_rate = 44100; frame.no_channels = 2; frame.no_samples = static_cast<int>(frames);

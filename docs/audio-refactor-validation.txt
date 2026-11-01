@@ -32,3 +32,24 @@ and check IIDX Audio during attract/login, selection, gameplay and results.
 Also check receiver reconnect, native recorder on/off, shutdown and A/V sync.
 Cabinet audio functionality/performance and long-session clock behavior are
 pending validation. No remote repository publication was performed.
+
+Startup-order correction - 2026-11-02
+
+The first cabinet run exposed a startup-order bug: ASIO starts before Spice
+invokes plugin SDK entry points. The NDI source was advertised, but the graph
+constructor hook never ran, leaving all audio packet counters at zero.
+
+The corrected adapter recognizes the existing graph with validated read-only
+snapshots at startup as well as hooking subsequent graph construction. All
+build-specific singleton/vtable offsets remain in the profile header. Logging
+now distinguishes receiver connections, observed tap callbacks and sent packets.
+
+Corrected DLL SHA256:
+e55a49eee997fe6aa99bad436978d417fe263e9340972aafddd9f9e2e0eca46d
+
+Four core/ABI/queue/snapshot tests pass, including initialization before the
+plugin, unreadable links, mismatched types and graph replacement. The real NDI
+audio round trip still passes: 573 packets, no bad samples/timecodes, no drops
+or errors, and recovery from one deliberate pause. A live NDI audio probe is
+available for packet/level checks. This correction has not yet been validated
+on the cabinet; the earlier installed build remains in place.

@@ -1,5 +1,6 @@
 #include "audio.h"
 #include "game_profiles.h"
+#include "game_audio_snapshot.h"
 #include <windows.h>
 #include <bcrypt.h>
 #include <MinHook.h>
@@ -18,6 +19,7 @@ GraphCreate real_graph_create = nullptr;
 TeeRead real_tee_read = nullptr;
 std::atomic<void*> selected_tee{};
 std::atomic<AudioCapture*> active_capture{};
+std::atomic<uint64_t> graph_generation{};
 // Deliberately retained with the pinned hook code. No callback can observe freed storage.
 AudioCapture* capture = nullptr;
 
@@ -47,6 +49,7 @@ void* pointer_at(void* object, size_t offset) noexcept {
     return *reinterpret_cast<void**>(static_cast<unsigned char*>(object) + offset);
 }
 void* __fastcall hook_graph_create(void* graph, int channels, int bits) {
+    graph_generation.fetch_add(1, std::memory_order_acq_rel);
     selected_tee.store(nullptr, std::memory_order_release);
     auto result = real_graph_create(graph, channels, bits);
     auto subgraph = pointer_at(graph, profile->main_subgraph_offset);
@@ -55,7 +58,24 @@ void* __fastcall hook_graph_create(void* graph, int channels, int bits) {
         selected_tee.store(tee, std::memory_order_release);
         log("Game audio tap selected: main stereo mixer, before recorder encoding and cabinet master gain");
     } else log("Game audio graph did not match verified layout; audio capture inactive");
+    graph_generation.fetch_add(1, std::memory_order_release);
     return result;
+}
+void attach_existing_graph() noexcept {
+    const auto generation = graph_generation.load(std::memory_order_acquire);
+    if (generation & 1) return; // A hooked constructor will select it when complete.
+    const auto read = [](uintptr_t address) noexcept -> uintptr_t {
+        uintptr_t value = 0;
+        SIZE_T copied = 0;
+        if (!address || !ReadProcessMemory(GetCurrentProcess(), reinterpret_cast<const void*>(address),
+            &value, sizeof(value), &copied) || copied != sizeof(value)) return 0;
+        return value;
+    };
+    const auto tee = existing_audio_tee(reinterpret_cast<uintptr_t>(game_base), *profile, read);
+    if (!tee || generation != graph_generation.load(std::memory_order_acquire)) return;
+    void* empty = nullptr;
+    if (selected_tee.compare_exchange_strong(empty, reinterpret_cast<void*>(tee), std::memory_order_release))
+        log("Game audio tap selected: existing main stereo graph (created before Spice SDK initialization)");
 }
 uint32_t __fastcall hook_tee_read(void* tee, float* samples, unsigned bytes) {
     const auto result = real_tee_read(tee, samples, bytes);
@@ -96,7 +116,11 @@ bool install_audio_hooks() {
         real_graph_create = nullptr; real_tee_read = nullptr; return false;
     }
     log(profile->name);
-    log("Game audio hooks installed; waiting for sound graph creation");
+    log("Game audio hooks installed");
+    // Spice can start ASIO before invoking plugin SDK entry points. Waiting only
+    // for future graph creation leaves an advertised source with no PCM forever.
+    attach_existing_graph();
+    if (!selected_tee.load(std::memory_order_acquire)) log("No existing audio graph matched; waiting for sound graph creation");
     return true;
 }
 }

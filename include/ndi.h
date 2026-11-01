@@ -31,6 +31,7 @@ public:
     NdiAudioSender(const std::wstring& runtime, const std::string& name);
     ~NdiAudioSender();
     bool connected() const;
+    int connections() const;
     void send(float* planar, unsigned frames, int64_t pts);
 private:
     NdiRuntime runtime_;

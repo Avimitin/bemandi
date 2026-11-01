@@ -9,7 +9,7 @@ struct AudioConfig {
     std::string source_name = "IIDX Audio";
 };
 struct AudioCounters {
-    std::atomic<uint64_t> callbacks{}, frames{}, sent{}, dropped{}, stale{}, invalid{}, discontinuities{}, errors{};
+    std::atomic<uint64_t> observed{}, callbacks{}, frames{}, sent{}, dropped{}, stale{}, invalid{}, discontinuities{}, errors{};
 };
 class AudioCapture {
 public:

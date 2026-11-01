@@ -22,6 +22,7 @@ void AudioCapture::stop() {
     if (worker_.joinable()) worker_.join();
 }
 void AudioCapture::copy(const float* samples, unsigned bytes) noexcept {
+    ++counters.observed;
     if (!wanted_.load(std::memory_order_acquire)) return;
     ++counters.callbacks;
     if (!samples || !bytes || bytes % (sizeof(float) * audio_channels) || bytes > audio_max_frames * audio_channels * sizeof(float)) {
@@ -46,17 +47,19 @@ void AudioCapture::work(std::wstring runtime, std::string name) noexcept {
         int64_t packet_pts = 0, anchor_pts = 0, last_block_pts = 0, last_packet_end = 0;
         auto report = timestamp() + 50000000, check = int64_t{0};
         bool connected = false;
+        int connections = 0;
         while (!stop_.load(std::memory_order_acquire)) {
             const auto now = timestamp();
             if (now >= check) {
-                connected = sender.connected();
+                connections = sender.connections();
+                connected = connections > 0;
                 wanted_.store(connected, std::memory_order_release);
                 check = now + 2500000;
             }
             if (now >= report) {
                 char message[512];
-                sprintf_s(message, "bemandi audio: callbacks=%llu frames=%llu packets=%llu dropped=%llu stale=%llu invalid=%llu discontinuities=%llu",
-                    counters.callbacks.load(), counters.frames.load(), counters.sent.load(), counters.dropped.load(),
+                sprintf_s(message, "bemandi audio: receivers=%d tap_callbacks=%llu callbacks=%llu frames=%llu packets=%llu dropped=%llu stale=%llu invalid=%llu discontinuities=%llu",
+                    connections, counters.observed.load(), counters.callbacks.load(), counters.frames.load(), counters.sent.load(), counters.dropped.load(),
                     counters.stale.load(), counters.invalid.load(), counters.discontinuities.load());
                 log(message); report = now + 50000000;
             }

@@ -35,8 +35,15 @@ output. It never registers/replaces the game's recorder callback or enables
 AAC/video recording. The selected mix precedes cabinet master gain/limiting
 and final device conversion; it is not a six-channel ASIO loopback.
 
-Plugin startup must precede sound graph construction. There is no late attach
-or traversal of a live mutable sound graph. Hook code and its capture storage
+Spice may start ASIO before plugin SDK initialization. After installing hooks,
+the adapter checks the already-published singleton/sound/graph/tee chain using
+ReadProcessMemory. It validates all available vtables and requires two matching
+snapshots; unreadable, uninitialized or changing layouts are rejected. This runs
+once during startup, never in the audio callback. Constructor hooks also handle
+graphs created later. The snapshot retains only a tee identity, not a buffer or
+an object to dereference later: copied PCM always comes from a live tee read call.
+The singleton RVA, vtables and extra offsets also belong in each build header.
+Hook code and its capture storage
 remain pinned until process exit. Stop disables forwarding and joins the NDI
 worker while retaining callback storage to prevent use-after-free.
 

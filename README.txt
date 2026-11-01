@@ -73,7 +73,8 @@ Requirements
 - A D3DCREATE_MULTITHREADED device. The plugin refuses other devices and does
   not change the game's device creation flags.
 - Installed NDI 6 runtime on the sender; compatible NDI software on the receiver.
-- Spice supporting the v0 plugin entry point. Load before video/sound creation.
+- Spice supporting the v0 plugin entry point. Load before video device creation.
+  Audio supports a sound graph already initialized before the SDK entry point.
 - Native audio requires a verified game profile; see docs/game-updates.txt.
 - A wired network with enough measured capacity for the selected NDI streams.
 
@@ -162,6 +163,12 @@ and frame rate, and increasing capture timecodes. The generator checks selected
 render states after each Present.
 The audio test uses varying 16..1024-frame chunks and checks stereo sample data,
 44100 Hz / 441-sample packets, levels, monotonic timestamps and sender restart.
+To inspect a live audio source without changing device routing:
+    build\ndi_audio_probe.exe "IIDX Audio" 10
+It reports packets, sample rate/channels, peak, RMS and nonzero samples. A silent
+scene can have valid packets with zero level. No packets means source capture,
+receiver connection or transport needs investigation. The cabinet log reports
+receiver count and tap callbacks separately from captured samples/NDI packets.
 
 cpu_core_percent is sender process CPU time divided by elapsed time: 100 means
 one fully used logical core, not 100 percent of the whole CPU. Tests run source
