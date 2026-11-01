@@ -13,3 +13,4 @@
 *.log
 /test-output/
 /dist/
+/.github-token.txt
