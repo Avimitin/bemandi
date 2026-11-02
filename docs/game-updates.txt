@@ -27,7 +27,11 @@ Update workflow:
    the cabinet: startup, attract/login, selection, gameplay, results, native
    recording on/off, receiver disconnect/reconnect, and shutdown/restart.
 
-Current audio profile: IIDX34 c98e183e (full hash in its header).
+Supported audio profiles (full hashes in their headers):
+- IIDX34 c98e183e: embedded build date Sep 17 2026.
+- IIDX34 3755587f: embedded build date Sep 10 2026.
+The dates identify the compared binaries, not a guaranteed game release label.
+
 The sound subgraph declares IEEE float32, two interleaved channels, 44100 Hz.
 The graph's first subgraph contains the same tee used by the native recorder.
 The adapter hooks its read method, calls the original first, then copies its
@@ -50,3 +54,36 @@ worker while retaining callback storage to prevent use-after-free.
 Static analysis establishes this adapter's layout and format. Real cabinet
 coverage of every scene/audio backend must be checked separately; a quiet eco
 screen can legitimately contain silence or stop requesting audio altogether.
+
+3755587f verification - 2026-11-02
+
+The Sep 10 DLL differs from the previously supported Sep 17 DLL, despite both
+being 18,200,216 bytes. It has a separate exact-hash profile. Static analysis
+confirmed that the profile RVAs, object offsets and hook fingerprints coincide:
+  Graph constructor:       0x3ec9f0
+  Tee read / tee vtable:    0x4b01c0 / 0xe435c0
+  Sound singleton:         0xbcce528
+  Singleton/sound/graph
+    vtables:               0xdedec0 / 0xe393e8 / 0xe392b8
+  Singleton -> sound:      +8
+  Sound -> graph:          +8
+  Graph -> main subgraph:  +8
+  Subgraph -> tee:         +336
+
+The entire tee read function is byte-identical. Comparison of the graph and
+subgraph constructors, tee factory and ASIO/WASAPI initialization found only
+relocated helper references; object accesses and audio format are unchanged.
+The new DLL's RTTI and singleton constructor independently confirm the startup
+chain. Subgraph construction at RVA 0x3eb1e0 declares stereo float32 at 44100 Hz,
+stores the tee at +336, and routes it into the downstream gain/limiter. The tee
+calls the upstream reader before the optional recorder callback and returns its
+32-bit result; its third argument remains a byte count. Capture therefore still
+uses the same adapter with the recorder disabled or enabled.
+
+The Release build and four unit tests passed, including exact selection of both
+hashes, rejection of prefixes/altered hashes, and startup snapshot checks for
+each profile. The synthetic NDI audio round trip passed with 569 packets, no bad
+format/sample/timecode checks, no queue drops or sender errors, and recovery
+after the deliberate pause. All eight video integration scenarios also passed.
+Live cabinet testing of 3755587f remains pending;
+the previous c98e183e cabinet results do not validate this binary at runtime.

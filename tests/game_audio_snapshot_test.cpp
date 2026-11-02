@@ -4,8 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "Failed line %d: %s\n", __LINE__, #x); std::abort(); } } while (false)
-int main() {
-    const auto& p = bemandi::games::iidx34_c98e183e;
+void check_profile(const bemandi::GameProfile& p) {
     constexpr uintptr_t base = 0x180000000, sound = 0x1000, graph = 0x2000, sub = 0x3000, tee = 0x4000;
     std::unordered_map<uintptr_t, uintptr_t> memory;
     auto read = [&](uintptr_t address) { auto it = memory.find(address); return it == memory.end() ? uintptr_t{0} : it->second; };
@@ -30,5 +29,8 @@ int main() {
         return read(address);
     };
     REQUIRE(!bemandi::existing_audio_tee(base, p, changing)); // Graph changes during snapshot.
-    puts("Existing graph, uninitialized graph, bad layouts and concurrent replacement passed");
+}
+int main() {
+    for (const auto* profile : bemandi::game_profiles) check_profile(*profile);
+    puts("Existing graph, uninitialized graph, bad layouts and concurrent replacement passed for all profiles");
 }

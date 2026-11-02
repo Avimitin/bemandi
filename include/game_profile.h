@@ -12,7 +12,7 @@ struct GameProfile {
     size_t singleton_sound_offset, sound_graph_offset;
     std::array<unsigned char, 16> graph_prologue, tee_prologue;
 };
-// ABI common to the supported profile. A changed signature needs a new adapter,
+// ABI common to the supported profiles. A changed signature needs a new adapter,
 // not just new addresses. The tee reads stereo float bytes, not a sample count.
 using GraphCreate = void* (__fastcall*)(void*, int output_channels, int output_bits);
 using TeeRead = uint32_t (__fastcall*)(void*, float*, unsigned bytes);

@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <thread>
 #define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "Failed line %d: %s\n", __LINE__, #x); std::abort(); } } while (false)
 int main() {
@@ -38,8 +39,18 @@ int main() {
     }
     producer.join();
     REQUIRE(!bemandi::find_game_profile("unrecognized"));
-    const auto& profile = bemandi::games::iidx34_c98e183e;
-    REQUIRE(std::string_view(profile.sha256).size() == 64);
-    REQUIRE(bemandi::find_game_profile(profile.sha256) == &profile);
+    REQUIRE(bemandi::find_game_profile("c98e183ec81ecb9e1cb13c237f9c9cb0b3f65b6fdaff6fd5e6a526008c546534")
+        == &bemandi::games::iidx34_c98e183e);
+    REQUIRE(bemandi::find_game_profile("3755587f44785effe5008f74cfe7dccbdf423ad09feead48e00a90f78a42fe83")
+        == &bemandi::games::iidx34_3755587f);
+    for (const auto* profile : bemandi::game_profiles) {
+        const std::string_view hash(profile->sha256);
+        REQUIRE(hash.size() == 64);
+        REQUIRE(bemandi::find_game_profile(hash) == profile);
+        REQUIRE(!bemandi::find_game_profile(hash.substr(0, 8))); // Prefixes cannot enable a tap.
+        std::string altered(hash);
+        altered.back() = altered.back() == '0' ? '1' : '0';
+        REQUIRE(!bemandi::find_game_profile(altered));
+    }
     puts("audio queue ownership, overflow, wraparound, concurrency and profile selection passed");
 }
